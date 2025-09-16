@@ -1,3 +1,10 @@
+import json
+import asyncio
+import os
+import time
+from typing import List, Dict, Any
+from lr_tree import TreeNode
+
 equal_prompt = '''<|im_start|>system\nYou are Qwen, created by Alibaba Cloud. You are a helpful assistant.<|im_end|>\n<|im_start|>user\nEvaluate whether the following two reasoning steps (s1 and s2) convey exactly the same meaning. Focus on semantic similarity rather than exact wording. 
 
 Compare the main ideas, key points, overall message, logical structure, and numerical calculations/results of both reasoning steps.
@@ -34,7 +41,7 @@ async def get_model_response(prompt, model="gpt-4-turbo-preview", temperature=0.
         print(f"Error getting response: {e} {model}")
         return None
 
-async def text_accept(response1, response2, last_ending, judge_client):
+async def text_accept(response1, response2, last_ending, judge_client, judge_model):
     if not last_ending:
         return False
 
@@ -44,12 +51,12 @@ async def text_accept(response1, response2, last_ending, judge_client):
 
     prompt = equal_prompt.format(response1.strip(), response2.strip())
 
-    response = await get_model_response(prompt, client=judge_client, model=args.judge_model, max_tokens=1)
+    response = await get_model_response(prompt, client=judge_client, model=judge_model, max_tokens=1)
 
     return 'ali' in response.lower() and 'un' not in response.lower() 
 
-async def accept_func(response1, response2, last_ending, judge_client):
-    return await text_accept(response1, response2, last_ending, judge_client)
+async def accept_func(response1, response2, last_ending, judge_client, judge_model):
+    return await text_accept(response1, response2, last_ending, judge_client, judge_model)
 
 def token_transform(token_ids, tokenizer_source, tokenizer_target):
     """Transform token IDs from source tokenizer to target tokenizer"""
@@ -68,7 +75,8 @@ def load_questions(file_path):
 
 async def run_problem(question, i, target_model, draft_model, \
                       target_tokenizer, draft_tokenizer, judge_client, \
-                        target_config, draft_config, output_dir):
+                        target_config, draft_config, output_dir, \
+                        use_spec, width, max_depth, ignore_half_sentence):
     """Run a single problem with the target and draft models"""
     question_id = i
     question_text = question['question']
@@ -107,14 +115,14 @@ async def run_problem(question, i, target_model, draft_model, \
           'Tokens: ', [target_token_ids, draft_token_ids])
 
     t0 = time.time()
-    if args.use_spec:
+    if use_spec:
         root = TreeNode(prefix=target_prompt, prefix_token_ids=target_token_ids, draft_prefix_token_ids=draft_token_ids, \
                        # draft_prefix=draft_prompt, draft_prefix_token_ids=draft_token_ids, \
-                        width=args.width, idx=0, depth=1, drafter=draft_model, \
-                            targeter=target_model, empty=True, max_depth=args.max_depth, \
+                        width=width, idx=0, depth=1, drafter=draft_model, \
+                            targeter=target_model, empty=True, max_depth=max_depth, \
                             target_config=target_config, draft_config=draft_config,\
-                                qid=question_id, ignore_half_sentence=args.ignore_half_sentence, \
-                                    accept_func=accept_func,judge_client=judge_client,draft2target=draft2target, target2draft=target2draft)
+                                qid=question_id, ignore_half_sentence=ignore_half_sentence, \
+                                    accept_func=accept_func,judge_client=judge_client,draft2target=draft2target, target2draft=target2draft, judge_model=target_config['judge_model'])
 
         root_node = root
 
@@ -125,7 +133,8 @@ async def run_problem(question, i, target_model, draft_model, \
             found_eos = False
             while root.main_data is not None and root.check_judge_children():
                 print('Main data: ', root.depth, root.idx)
-                if target_config['eos_id'] in root.main_data['i'] or draft_config['eos_id'] in root.drafter_data['i']:
+                if any(eos_id in root.main_data['i'] for eos_id in target_config['eos_id']) or \
+                   any(eos_id in root.drafter_data['i'] for eos_id in draft_config['eos_id']):
                     print('Found EOS in main data:', root.depth, root.idx, root.main_data, root.drafter_data)
                     found_eos = True
                     break
@@ -187,8 +196,8 @@ async def run_problem(question, i, target_model, draft_model, \
                                             drafter=root.drafter, targeter=root.targeter, empty=True, max_depth=root.max_depth, \
                                                 generated_tokens=root.generated_tokens + root.drafter_data['n'] + root.main_data['n'], \
                                                 target_config=target_config, draft_config=draft_config,\
-                                                    qid=question_id, ignore_half_sentence=args.ignore_half_sentence, \
-                                                        accept_func=accept_func, judge_client=judge_client, draft2target=draft2target, target2draft=target2draft)
+                                                    qid=question_id, ignore_half_sentence=ignore_half_sentence, \
+                                                        accept_func=accept_func, judge_client=judge_client, draft2target=draft2target, target2draft=target2draft, judge_model=target_config['judge_model'])
                     old_root.children.append(root)
                     root_node = root
 

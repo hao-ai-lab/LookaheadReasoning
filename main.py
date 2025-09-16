@@ -11,8 +11,9 @@ import random
 import subprocess
 import requests
 
-from lookahead_reasoning import Targeter, Drafter
-from lookahead_reasoning import TreeNode
+from vllm_model import Targeter, Drafter
+from lr_tree import TreeNode
+from lr import load_questions, run_problem
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset', type=str, default='aime-2024.jsonl')
@@ -26,7 +27,7 @@ parser.add_argument('--width', type=int, default=1)
 parser.add_argument('--model', type=str, default='Qwen/Qwen3-32B')
 parser.add_argument('--draft_model', type=str, default='Qwen/Qwen3-1.7B')
 parser.add_argument('--judge_model', type=str, default='Qwen/Qwen2.5-7B-Instruct')
-parser.add_argument('--judge_port', type=int, default=8001)
+parser.add_argument('--judge_port', type=int, default=8000)
 
 parser.add_argument('--target_gpu_id', type=str, default='0,1')
 parser.add_argument('--draft_gpu_id', type=str, default='2')
@@ -52,8 +53,7 @@ MODEL_CONFIGS = {
         'top_k': 0,
         'max_tokens': 32768,
         'prompt_template': 'deepseek',
-        'eos': "<｜end▁of▁sentence｜>",
-        'eos_id': 151643,
+        'eos_id': [151643, 151645],
         'stop': ['\n\n'],
         'step_tokens': 100,
     },
@@ -64,22 +64,9 @@ MODEL_CONFIGS = {
         'top_k': 20,
         'max_tokens': 38912,
         'prompt_template': 'qwen3',
-        'eos': '<|endoftext|>',
         'eos_id': [151643, 151645],
         'stop': ['\n\n'],
         'step_tokens': 100,
-    },
-    'gpt': {
-        'name': 'gpt',
-        'temperature': 1.0,
-        'top_p': 1.0,
-        'top_k': 40,
-        'max_tokens': 130000,
-        'prompt_template': 'gpt',
-        'eos': '<|endoftext|>',
-        'stop': ['\n\n'],
-        'step_tokens': 100,
-
     }
 }
 
@@ -93,8 +80,6 @@ def get_model_config(model_name):
         return MODEL_CONFIGS['deepseek']
     elif 'qwen3' in model_name_lower:
         return MODEL_CONFIGS['qwen3']
-    elif 'gpt' in model_name_lower or 'oai' in model_name_lower:
-        return MODEL_CONFIGS['gpt']
     else:
         assert False, f"Unknown model: {model_name}"
 
@@ -116,16 +101,16 @@ async def main():
 
     os.environ['CUDA_VISIBLE_DEVICES'] = args.target_gpu_id
     # Set environment variables for GPU usage
-    target_model = Targeter(args.model, eos=None, eos_id=target_config['eos_id'], target_gpu_id=args.target_gpu_id,
+    target_model = Targeter(args.model, eos_id=target_config['eos_id'], target_gpu_id=args.target_gpu_id,
                     enable_n_gram=args.enable_n_gram, vllm_config={'force_eager': False, 'num_speculative_tokens': args.num_speculative_tokens, 'prompt_lookup_max': args.prompt_lookup_max}) 
 
     os.environ['CUDA_VISIBLE_DEVICES'] = args.draft_gpu_id
-    draft_model = Drafter(args.draft_model, eos=None, eos_id=draft_config['eos_id'], draft_gpu_id=args.draft_gpu_id,
+    draft_model = Drafter(args.draft_model, eos_id=draft_config['eos_id'], draft_gpu_id=args.draft_gpu_id,
                     enable_n_gram=args.enable_n_gram, vllm_config={'force_eager': False, 'num_speculative_tokens': args.num_speculative_tokens, 'prompt_lookup_max': args.prompt_lookup_max})
 
 
     assert target_config['name'] == draft_config['name'], \
-        "Target and draft models must be of the same type (e.g., both Qwen3 or both GPT)."
+        "Target and draft models must be of the same type (e.g., both Qwen3)."
 
     target_config['judge_model'] = args.judge_model
     print(f"Target Model Config: {target_config}")
@@ -133,8 +118,10 @@ async def main():
 
     for i in range(len(questions)):
         await run_problem(questions[i], i, target_model, draft_model, \
-                          target_tokenizer, draft_tokenizer, \
-                          target_config, draft_config, output_dir)
+                          target_tokenizer, draft_tokenizer, judge_client, \
+                          target_config, draft_config, output_dir, \
+                          use_spec=args.use_spec, width=args.width, max_depth=args.max_depth, \
+                          ignore_half_sentence=args.ignore_half_sentence)
 
     print(f"Results saved to {output_dir}")
 

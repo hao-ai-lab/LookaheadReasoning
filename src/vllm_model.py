@@ -9,7 +9,7 @@ import time
 from transformers import AutoTokenizer
 
 class LLMModel:
-    def __init__(self, model,  eos=None, eos_id=None, gpu_ids="", enable_n_gram=False,  vllm_config={}):
+    def __init__(self, model, eos_id=None, gpu_ids="", enable_n_gram=False,  vllm_config={}):
         self.gpu_ids = gpu_ids
         self.eos_id = eos_id
 
@@ -47,7 +47,6 @@ class LLMModel:
         self.prefix = model.split('/')[-1].split('-')[0]  # Extract prefix from model name
         self.engine = AsyncLLM.from_engine_args(engine_args)
         self.request_id = 1
-        self.eos = eos
         self.enable_n_gram = enable_n_gram
         self.tokenizer = AutoTokenizer.from_pretrained(model)
 
@@ -78,39 +77,33 @@ class LLMModel:
 
         if out.outputs[0].finish_reason == 'stop':
             if out.outputs[0].stop_reason is not None:
-                if out.outputs[0].stop_reason == self.eos_id:
+                if out.outputs[0].stop_reason in self.eos_id:
                     return out.outputs[0].text + '<|endoftext|>', out.outputs[0].finish_reason, out.outputs[0].stop_reason, num_tokens, out.outputs[0].token_ids
-                
-                #print('Stopping: ', [out.outputs[0].text, out.outputs[0].stop_reason,
-                #                     tokenizer.decode(out.outputs[0].token_ids), tokenizer.encode(out.outputs[0].text + out.outputs[0].stop_reason)], self.eos_id)
-                #if '\n\n' in out.outputs[0].text:
-                #    print('Double Newline Stopping: ', [out.outputs[0].text, out.outputs[0].stop_reason], self.eos_id)
-                #    exit(0)
                 if self.enable_n_gram:
                     out.outputs[0].token_ids = self.tokenizer.encode(out.outputs[0].text + out.outputs[0].stop_reason)
                 return out.outputs[0].text + out.outputs[0].stop_reason, out.outputs[0].finish_reason, out.outputs[0].stop_reason, num_tokens, out.outputs[0].token_ids
             else:
                 print('Finishing: ', out.outputs[0].finish_reason, out.outputs[0].stop_reason, self.eos_id)
-                return out.outputs[0].text, out.outputs[0].finish_reason, self.eos, num_tokens, out.outputs[0].token_ids
+                return out.outputs[0].text, out.outputs[0].finish_reason, out.outputs[0].stop_reason, num_tokens, out.outputs[0].token_ids
         else:
             return out.outputs[0].text, out.outputs[0].finish_reason, out.outputs[0].stop_reason, num_tokens, out.outputs[0].token_ids
 
 ### Drafter model
 class Drafter:
-    def __init__(self, model, eos=None, eos_id=None, draft_gpu_id=None, \
+    def __init__(self, model, eos_id=None, draft_gpu_id=None, \
                  enable_n_gram=False, vllm_config={'force_eager': False, 'num_speculative_tokens': 4, 'prompt_lookup_max': 2}):
         print('Drafting')
-        self.model = LLMModel(model, eos, eos_id, draft_gpu_id, enable_n_gram, vllm_config)
+        self.model = LLMModel(model, eos_id, draft_gpu_id, enable_n_gram, vllm_config)
         
     def draft(self, prompt, max_tokens=100, temperature=0.6, top_p=0.95, top_k=20, stop=['\n\n']):
         return self.model.generate(prompt, max_tokens=max_tokens, temperature=temperature, top_p=top_p, top_k=top_k, stop=stop)
 
 ### Target Model 
 class Targeter:
-    def __init__(self, model, eos=None, eos_id=None, target_gpu_id=None, \
+    def __init__(self, model, eos_id=None, target_gpu_id=None, \
                  enable_n_gram=False, vllm_config={'force_eager': False, 'num_speculative_tokens': 4, 'prompt_lookup_max': 2}):
         print('Targeting')
-        self.model = LLMModel(model, eos, eos_id, target_gpu_id, enable_n_gram, vllm_config)
+        self.model = LLMModel(model, eos_id, target_gpu_id, enable_n_gram, vllm_config)
         
     def target(self, prompt, max_tokens=100, temperature=0.6, top_p=0.95, top_k=20, stop=['\n\n']):
         return self.model.generate(prompt, max_tokens=max_tokens, temperature=temperature, top_p=top_p, top_k=top_k, stop=stop)

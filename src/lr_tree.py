@@ -69,7 +69,7 @@ class DrafterNode:
 class TreeNode:
     def __init__(self, prefix=None, prefix_token_ids=None, draft_prefix_token_ids=None, width=3, idx=0, depth=1, drafter=None, targeter=None, empty=False, \
                  max_depth=None, generated_tokens=0, target_config=None,draft_config=None, qid=None, ignore_half_sentence=True, 
-                 accept_func=None, judge_client=None, draft2target=None, target2draft=None, build_info=None):
+                 accept_func=None, judge_client=None, draft2target=None, target2draft=None, build_info=None, judge_model=None):
         self.prefix = prefix
         self.prefix_token_ids = prefix_token_ids
         self.draft_prefix_token_ids = draft_prefix_token_ids
@@ -93,6 +93,7 @@ class TreeNode:
         self.ignore_half_sentence = ignore_half_sentence
         self.accept_func = accept_func
         self.judge_client = judge_client
+        self.judge_model = judge_model
         self.drafter_data = None
         self.main_data = None
         self.generated_tokens = generated_tokens
@@ -164,7 +165,7 @@ class TreeNode:
         if self.main_data is not None:
             for child in self.children:
                 if child is not None and child.drafter_data is not None and child.drafter_data['j'] is None:
-                    child.drafter_data['j'] = asyncio.create_task(self.accept_func(self.main_data['t'], child.drafter_data['t'], self.main_data['l'], self.judge_client))
+                    child.drafter_data['j'] = asyncio.create_task(self.accept_func(self.main_data['t'], child.drafter_data['t'], self.main_data['l'], self.judge_client, self.judge_model))
 
         for child in self.children:
             await child.travel_set_accepted()

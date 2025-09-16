@@ -10,12 +10,23 @@
     |
 </div>
 
+This repository contains the official implementation of **Lookahead Reasoning**, a novel technique that accelerates large reasoning models by speculatively generating and verifying reasoning steps in parallel.
 
+- [Method](#method)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [How to Use Lookahead Reasoning](#how-to-use-lookahead-reasoning)
+- [Citation](#citation)
 
+----- 
 
 ## Method 
 
-**Lookahead Reasoning (LR)** is a novel method designed to accelerate the inference speed of large reasoning models (LRMs). While traditional token-level speculative decoding offers some speedup, it provides bounded speedups on complex, long-form tasks. This is because the probability of correctly guessing a long, exact sequence of tokens is exponentially low. Lookahead Reasoning overcomes this limitation by elevating speculation from the token level to the more abstract 'reasoning step' level.
+<div align="center">
+    <img src="assets/LookaheadReasoningStep.jpg" alt="Lookahead Reasoning" width="600px">
+</div>
+
+**Lookahead Reasoning (LR)** is a novel method designed to accelerate the inference speed of large reasoning models (LRMs). While traditional token-level speculative decoding offers some speedup, it is bounded on complex, long-form tasks. This is because the probability of correctly guessing a long, exact sequence of tokens is exponentially low. Lookahead Reasoning mitigate this limitation by elevating speculation from the token level to the more abstract 'reasoning step' level.
 
 
 The core of LR lies in a cyclical process where a smaller, faster 'draft' model generates multiple potential future steps, which are then verified in parallel by a powerful 'target' model. A single cycle unfolds as follows:
@@ -32,14 +43,14 @@ By validating entire chunks of logic at once, LR can produce several correct rea
 
 ----- 
 
-## ⚙️ Requirements
+## Requirements
 
   * **Hardware:** A server with at least **4x 80GB GPUs** is required to run the example configuration.
   * **Software:** Python 3.10+, PyTorch, and `vLLM`.
 
 -----
 
-## 📦 Installation
+## Installation
 
 To get started, clone the repository and install the required dependencies:
 
@@ -51,7 +62,7 @@ pip install -e .
 
 -----
 
-## 🚀 How to Use Lookahead Reasoning
+## How to Use Lookahead Reasoning
 
 Our framework operates with three key components:
 
@@ -123,13 +134,13 @@ The results, including generated outputs and performance metrics, will be saved 
 -----
 
 
-## 📈 Reproduced Results
+### Reproduced Results
 
 *(This section can be filled in with tables or charts showing your key performance results, such as speedup vs. baseline, acceptance rate, etc.)*
 
 -----
 
-## 🛠️ Configuration & Arguments
+### Configuration & Arguments
 
 This section details the command-line arguments available in `main.py` for customizing your experiments.
 
@@ -169,7 +180,7 @@ This section details the command-line arguments available in `main.py` for custo
 -----
 
 
-## 📜 Citation
+## Citation
 
 If you find Lookahead Reasoning useful in your research or project, please cite our paper:
 

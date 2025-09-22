@@ -45,7 +45,7 @@ By validating entire chunks of logic at once, LR can produce several correct rea
 
 ## Requirements
 
-  * **Hardware:** A server with at least **4x 80GB GPUs** is required to run the example configuration.
+  * **Hardware:** A server with at least **4x 80GB GPUs** is required to run the example configuration (32B target/1.7B draft/7B judge).
   * **Software:** Python 3.10+, PyTorch, and `vLLM`.
 
 -----
@@ -57,7 +57,7 @@ To get started, clone the repository and install the required dependencies:
 ```bash
 git clone https://github.com/hao-ai-lab/LookaheadReasoning.git
 cd LookaheadReasoning
-pip install -e .
+uv pip install -e .
 ```
 
 -----
@@ -79,8 +79,8 @@ First, launch the Judge model as a dedicated inference server using `vLLM`. This
 > **Note:** The `--enable-prefix-caching` flag is recommended for better performance.
 
 ```bash
-# Assigns the Judge model to GPU 4
-CUDA_VISIBLE_DEVICES=4 vllm serve Qwen/Qwen2.5-7B-Instruct --enable-prefix-caching
+# Assigns the Judge model to GPU 3
+CUDA_VISIBLE_DEVICES=3 vllm serve Qwen/Qwen2.5-7B-Instruct --enable-prefix-caching
 ```
 
 ### Step 2: Run the Main Experiment Script
@@ -99,7 +99,7 @@ You can run experiments in four different modes:
 This enables our core Lookahead Reasoning algorithm.
 
 ```bash
-python main.py --dataset data/aime-2024.jsonl --use_spec --ignore_half_sentence
+python main.py --dataset data/aime-2024.jsonl --use_spec
 ```
 
 #### **Mode 2: LR with Speculative Decoding (LR+SD)**
@@ -107,7 +107,7 @@ python main.py --dataset data/aime-2024.jsonl --use_spec --ignore_half_sentence
 This combines Lookahead Reasoning with n-gram based speculative decoding for potentially even greater speedups.
 
 ```bash
-python main.py --dataset data/aime-2024.jsonl --use_spec --ignore_half_sentence --enable_n_gram
+python main.py --dataset data/aime-2024.jsonl --use_spec --enable_n_gram
 ```
 
 #### **Mode 3: Standard Speculative Decoding (SD)**

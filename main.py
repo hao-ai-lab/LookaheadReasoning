@@ -1,19 +1,14 @@
 import openai
 import asyncio
-from tqdm import tqdm
-import time
 from transformers import AutoTokenizer
 import os
-import json
 import datetime
 import argparse
 import random
-import subprocess
-import requests
+import json
 
 from vllm_model import Targeter, Drafter
-from lr_tree import TreeNode
-from lr import load_questions, run_problem
+from lr import run_problem
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset', type=str, default='aime-2024.jsonl')
@@ -36,7 +31,6 @@ parser.add_argument('--enable_n_gram', action='store_true')
 parser.add_argument('--num_speculative_tokens', type=int, default=6)
 parser.add_argument('--prompt_lookup_max', type=int, default=2)
 
-parser.add_argument('--ignore_half_sentence', action='store_true')
 parser.add_argument('--max_tokens_len', type=int, default=37000)
 parser.add_argument('--use_spec', action='store_true')
 
@@ -83,6 +77,14 @@ def get_model_config(model_name):
     else:
         assert False, f"Unknown model: {model_name}"
 
+def load_questions(file_path):
+    """Load questions from jsonl file"""
+    questions = []
+    with open(file_path, 'r') as f:
+        for line in f:
+            data = json.loads(line)
+            questions.append(data)
+    return questions
 
 
 async def main():
@@ -121,7 +123,7 @@ async def main():
                           target_tokenizer, draft_tokenizer, judge_client, \
                           target_config, draft_config, output_dir, \
                           use_spec=args.use_spec, width=args.width, max_depth=args.max_depth, \
-                          ignore_half_sentence=args.ignore_half_sentence)
+                          ignore_half_sentence=True)
 
     print(f"Results saved to {output_dir}")
 

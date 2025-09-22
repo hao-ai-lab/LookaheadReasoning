@@ -63,16 +63,6 @@ def token_transform(token_ids, tokenizer_source, tokenizer_target):
     text = tokenizer_source.decode(token_ids)
     return tokenizer_target.encode(text, add_special_tokens=False)
 
-def load_questions(file_path):
-    """Load questions from jsonl file"""
-    questions = []
-    with open(file_path, 'r') as f:
-        for line in f:
-            data = json.loads(line)
-            questions.append(data)
-    return questions
-
-
 async def run_problem(question, i, target_model, draft_model, \
                       target_tokenizer, draft_tokenizer, judge_client, \
                         target_config, draft_config, output_dir, \

@@ -134,9 +134,7 @@ The results, including generated outputs and performance metrics, will be saved 
 -----
 
 
-### Reproduced Results
-
-# AIME24 Results Summary
+### Reproduced Results on AIME24
 
 **Setup:** 480 total traces (16 samples per problem) on 4×H200  
 **Models:** Qwen3-32B (target) / Qwen3-1.7B (draft) / Qwen2.5-7B-Instruct (judge)

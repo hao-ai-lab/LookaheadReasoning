@@ -147,6 +147,8 @@ The results, including generated outputs and performance metrics, will be saved 
 
 Our method achieves significant acceleration while preserving accuracy, with multiplicative gains when combined with speculative decoding.
 
+**Note:** Use `report_prefix.py` to aggregate results across folders with the same prefix.
+
 -----
 
 ### Configuration & Arguments

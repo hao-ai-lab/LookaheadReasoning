@@ -136,7 +136,18 @@ The results, including generated outputs and performance metrics, will be saved 
 
 ### Reproduced Results
 
-*(This section can be filled in with tables or charts showing your key performance results, such as speedup vs. baseline, acceptance rate, etc.)*
+# AIME24 Results Summary
+
+**Setup:** 480 total traces (16 samples per problem) on 4×H200  
+**Models:** Qwen3-32B (target) / Qwen3-1.7B (draft) / Qwen2.5-7B-Instruct (judge)
+
+| Method | Accuracy | Speed | Speedup |
+|--------|----------|-------|---------|
+| Autoregressive | 80.21% | 76.38 | 1.00x |
+| Ours | 81.04% | 90.90 | **1.19x** |
+| Ours + SD | 81.25% | 120.74 | **1.58x** |
+
+Our method achieves significant acceleration while preserving accuracy, with multiplicative gains when combined with speculative decoding.
 
 -----
 

@@ -6,7 +6,7 @@
 <div align="center" style="line-height: 1; margin-bottom: 12px;">
     | <a href="https://hao-ai-lab.github.io/blogs/lookaheadreasoning/">📝 Blog</a> 
     | <a href="https://arxiv.org/abs/2506.19830">📄 Paper</a> 
-    | <a href="https://x.com/haoailab">🐦 Twitter/X</a> 
+    | <a href="https://x.com/haoailab/status/1970552850377064933">🐦 Twitter/X</a> 
     |
 </div>
 

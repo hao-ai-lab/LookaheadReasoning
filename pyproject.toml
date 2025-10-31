@@ -12,7 +12,7 @@ requires-python = ">=3.10"
 dependencies = [
     "vllm==0.10.1",
     "dynasor @ git+https://github.com/hao-ai-lab/Dynasor.git",
-    "sentence-transformers==2.2.2",
+    "sentence-transformers",
 ]
 
 [project.scripts]

@@ -22,18 +22,17 @@ def list_result_files(directory: str) -> List[str]:
     return sorted(files)
 
 
-def compute_accept_rate(files: List[str]) -> Tuple[float, float, int, int]:
+def compute_accept_rate(files: List[str]) -> Tuple[float, int, int]:
     """Compute accept rates from a list of JSON result files.
 
     Returns a tuple of:
     - overall_accept_rate: aggregated over all accepts across files
-    - mean_file_accept_rate: average of per-file accept rates
     - num_files_used: number of files that contained a non-empty accepts list
     - num_accept_decisions: total number of accept entries aggregated
     """
     total_accept_sum = 0
     total_accept_count = 0
-    per_file_rates: List[float] = []
+    num_files_used = 0
 
     for fp in files:
         try:
@@ -65,23 +64,21 @@ def compute_accept_rate(files: List[str]) -> Tuple[float, float, int, int]:
         c = len(numeric_accepts)
         total_accept_sum += s
         total_accept_count += c
-        per_file_rates.append(s / c)
+        num_files_used += 1
 
     overall = (total_accept_sum / total_accept_count) if total_accept_count > 0 else 0.0
-    mean_file = (sum(per_file_rates) / len(per_file_rates)) if per_file_rates else 0.0
-    return overall, mean_file, len(per_file_rates), total_accept_count
+    return overall, num_files_used, total_accept_count
 
 
 def analyze_directories(directories: List[str]) -> None:
     """Analyze one or more directories and print accept rate summaries."""
     for d in directories:
         files = list_result_files(d)
-        overall, mean_file, num_files, num_accepts = compute_accept_rate(files)
+        overall, num_files, num_accepts = compute_accept_rate(files)
         print(f"Directory: {d}")
         print(f"  Files analyzed: {num_files}")
         print(f"  Accept decisions: {num_accepts}")
         print(f"  Overall accept rate: {overall:.4f}")
-        print(f"  Mean of per-file accept rates: {mean_file:.4f}")
         print()
 
 

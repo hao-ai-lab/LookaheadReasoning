@@ -82,27 +82,34 @@ async def run_problem(question, i, target_model, draft_model, \
         tokenize=False,
         )
 
-    draft_prompt = draft_tokenizer.apply_chat_template(
-        [{"role": "user", "content": prompt}],
-        add_generation_prompt=True,
-        tokenize=False,
-        )
-
-
     target_token_ids = target_tokenizer.encode(target_prompt, add_special_tokens=False)
-    draft_token_ids = draft_tokenizer.encode(draft_prompt, add_special_tokens=False)
-    # response = await target_model.target(prompt_token_ids)
 
-    if target_config['name'] == draft_config['name']:
-        target2draft = lambda x: x 
-        draft2target = lambda x: x
+    if use_spec:
+        draft_prompt = draft_tokenizer.apply_chat_template(
+            [{"role": "user", "content": prompt}],
+            add_generation_prompt=True,
+            tokenize=False,
+            )
+        draft_token_ids = draft_tokenizer.encode(draft_prompt, add_special_tokens=False)
+
+        if target_config['name'] == draft_config['name']:
+            target2draft = lambda x: x
+            draft2target = lambda x: x
+        else:
+            target2draft = lambda x: token_transform(x, target_tokenizer, draft_tokenizer)
+            draft2target = lambda x: token_transform(x, draft_tokenizer, target_tokenizer)
+
+        print('Running question:', question_id,
+              'Draft prompt:', [draft_prompt], 'Target prompt:', [target_prompt],
+              'Tokens: ', [target_token_ids, draft_token_ids])
     else:
-        target2draft = lambda x: token_transform(x, target_tokenizer, draft_tokenizer)
-        draft2target = lambda x: token_transform(x, draft_tokenizer, target_tokenizer)
-
-    print('Running question:', question_id, 
-          'Draft prompt:', [draft_prompt], 'Target prompt:', [target_prompt],
-          'Tokens: ', [target_token_ids, draft_token_ids])
+        draft_prompt = None
+        draft_token_ids = None
+        target2draft = None
+        draft2target = None
+        print('Running question:', question_id,
+              'Target prompt:', [target_prompt],
+              'Tokens: ', [target_token_ids])
 
     t0 = time.time()
     if use_spec:

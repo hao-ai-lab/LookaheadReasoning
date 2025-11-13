@@ -96,23 +96,27 @@ async def main():
     questions = load_questions(args.dataset)[args.start_qid:args.end_qid]
 
     target_tokenizer = AutoTokenizer.from_pretrained(args.model)
-    draft_tokenizer = AutoTokenizer.from_pretrained(args.draft_model)
-
     target_config = get_model_config(args.model)
-    draft_config = get_model_config(args.draft_model)
 
     os.environ['CUDA_VISIBLE_DEVICES'] = args.target_gpu_id
     # Set environment variables for GPU usage
     target_model = Targeter(args.model, eos_id=target_config['eos_id'], target_gpu_id=args.target_gpu_id,
-                    enable_n_gram=args.enable_n_gram, vllm_config={'force_eager': False, 'num_speculative_tokens': args.num_speculative_tokens, 'prompt_lookup_max': args.prompt_lookup_max}) 
-
-    os.environ['CUDA_VISIBLE_DEVICES'] = args.draft_gpu_id
-    draft_model = Drafter(args.draft_model, eos_id=draft_config['eos_id'], draft_gpu_id=args.draft_gpu_id,
                     enable_n_gram=args.enable_n_gram, vllm_config={'force_eager': False, 'num_speculative_tokens': args.num_speculative_tokens, 'prompt_lookup_max': args.prompt_lookup_max})
 
+    if args.use_spec:
+        draft_tokenizer = AutoTokenizer.from_pretrained(args.draft_model)
+        draft_config = get_model_config(args.draft_model)
 
-    assert target_config['name'] == draft_config['name'], \
-        "Target and draft models must be of the same type (e.g., both Qwen3)."
+        os.environ['CUDA_VISIBLE_DEVICES'] = args.draft_gpu_id
+        draft_model = Drafter(args.draft_model, eos_id=draft_config['eos_id'], draft_gpu_id=args.draft_gpu_id,
+                        enable_n_gram=args.enable_n_gram, vllm_config={'force_eager': False, 'num_speculative_tokens': args.num_speculative_tokens, 'prompt_lookup_max': args.prompt_lookup_max})
+
+        assert target_config['name'] == draft_config['name'], \
+            "Target and draft models must be of the same type (e.g., both Qwen3)."
+    else:
+        draft_tokenizer = None
+        draft_model = None
+        draft_config = None
 
     target_config['judge_model'] = args.judge_model
     print(f"Target Model Config: {target_config}")
